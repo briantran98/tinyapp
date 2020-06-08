@@ -3,6 +3,11 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require('body-parser');
 
+const generateRandomString = () => {
+  const randomString = Math.random().toString(32).substring(2,8)
+  return randomString;
+};
+
 app.use(bodyParser.urlencoded({extended: true}))
 app.set('view engine', 'ejs');
 
@@ -13,7 +18,9 @@ const urlDatabase = {
 
 app.post('/urls', (req, res) => {
   console.log(req.body);
-  res.send('OK')
+  randomString = generateRandomString();
+  urlDatabase[randomString] = req.body.longURL;
+  res.redirect(302, `/urls/${randomString}`);
 })
 
 app.get('/', (req, res) => {
@@ -41,6 +48,11 @@ app.get('/urls/:shortURL', (req, res) => {
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
   console.log(req.params);
   res.render('urls_show', templateVars);
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  res.redirect(longURL);
 });
 
 app.listen(PORT, () => {
