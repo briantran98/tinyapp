@@ -9,8 +9,14 @@ const urlDatabase = {
   '9sm5xK': 'http://www.google.com'
 };
 
+
 app.get('/', (req, res) => {
   res.send('Hello!');
+});
+
+app.get('/urls', (req, res) => {
+  let templateVars = {urls: urlDatabase};
+  res.render('urls_index', templateVars);
 });
 
 app.get('/urls.json', (req, res) => {
@@ -19,6 +25,12 @@ app.get('/urls.json', (req, res) => {
 
 app.get('/hello', (req, res) => {
   res.send('<html><bodyy>Hello <b>World</b></body></html>\n')
+});
+
+app.get('/urls/:shortURL', (req, res) => {
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
+  console.log(req.params);
+  res.render('urls_show', templateVars);
 });
 
 app.listen(PORT, () => {
