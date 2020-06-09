@@ -18,7 +18,7 @@
     </div>
     <div class="card-footer text-center">
       <h2 style="color: gray;"><b>Edit</b></h2>
-      <form action="/urls" method="POST">
+      <form method="POST" action="/urls/<%= shortURL %>">
         <div class="form-group mb-2">
           <label for="newURL" style="color:gray">New URL:</label>
           <input type="text" name="newURL" placeholder="http://" style="width: 250px; margin: 1em">
