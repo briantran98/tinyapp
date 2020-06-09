@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const PORT = 8080;
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 
 const generateRandomString = () => {
   const randomString = Math.random().toString(32).substring(2,8)
