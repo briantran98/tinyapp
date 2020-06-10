@@ -9,6 +9,8 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set('view engine', 'ejs');
 
+
+
 const urlDatabase = {
   'b2xVn2':'http://www.lighthouselabs.ca',
   '9sm5xK': 'http://www.google.com'
@@ -26,6 +28,7 @@ const users = {
     password: "dishwasher-funk"
   }
 };
+
 
 app.get('/login', (req, res) => {
   const templateVars = {user: users[req.cookies.user_id]};
