@@ -37,7 +37,6 @@ app.get('/', (req, res) => {
 
 app.get('/urls', (req, res) => {
   const templateVars = {urls: urlDatabase, user: users[req.cookies.user_id]};
-  console.log(users[req.cookies.user_id]);
   res.render('urls_index', templateVars);
 });
 
@@ -66,9 +65,19 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.post('/register', (req, res) => {
   const id = uuid().split('-')[0];
+  const email = req.body.email;
+  const password = req.body.password;
+  if (!email || !password) {
+    return res.sendStatus(400);
+  }
+
+  if(validateEmail(email)) {
+    return res.sendStatus(400);
+  }
+  
   const newUser = {
-    email: req.body.email,
-    password: req.body.password,
+    email,
+    password,
     id: id
   }
   users[id] = newUser;
@@ -84,12 +93,11 @@ app.post('/urls', (req, res) => {
 
 app.post('/login', (req, res) => {
   const username = req.body.username;
-
   res.redirect('/urls/')
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect('/urls/')
 });
 
@@ -110,3 +118,13 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`)
 });
+
+// Checks if email is already in the database
+// If email is in database return true
+const validateEmail = (email) => {
+  for (const key in users) {
+    if (email === users[key].email) {
+      return true;
+    }
+  }
+};
