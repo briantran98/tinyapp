@@ -28,11 +28,13 @@ const users = {
 }
 
 app.get('/login', (req, res) => {
-  res.render('login');
+  const templateVars = {user: users[req.cookies.user_id]};
+  res.render('login', templateVars);
 });
 
 app.get('/register', (req, res) => {
-  res.render('register');
+  const templateVars = {user: users[req.cookies.user_id]};
+  res.render('register', templateVars);
 });
 
 app.get('/', (req, res) => {
@@ -96,7 +98,12 @@ app.post('/urls', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  const username = req.body.username;
+  const email = req.body.email;
+  const password = req.body.password;
+  console.log(email);
+  if(!validateEmail(email)) {
+    return res.sendStatus(403)
+  };
   res.redirect('/urls/')
 });
 
