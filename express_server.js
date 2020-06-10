@@ -9,11 +9,9 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.set('view engine', 'ejs');
 
-
-
 const urlDatabase = {
-  'b2xVn2':'http://www.lighthouselabs.ca',
-  '9sm5xK': 'http://www.google.com'
+  'b2xVn2': { longURL: 'lighthouselabs.ca', userID: 'userRandomID' },
+  '9sm5xK': { longURL: 'http://www.google.com',  userID: 'user2RandomID'}
 };
 
 const users = {
@@ -29,15 +27,16 @@ const users = {
   }
 };
 
-
 app.get('/login', (req, res) => {
-  const templateVars = {user: users[req.cookies.user_id]};
-  res.render('login', templateVars);
+  const user = req.cookies.user_id
+  const templateVars = {user};
+  return res.render('login', templateVars);
 });
 
 app.get('/register', (req, res) => {
-  const templateVars = {user: users[req.cookies.user_id]};
-  res.render('register', templateVars);
+  const user = req.cookies.user_id
+  const templateVars = {user};
+  return res.render('register', templateVars);
 });
 
 app.get('/', (req, res) => {
@@ -45,13 +44,31 @@ app.get('/', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const templateVars = {urls: urlDatabase, user: users[req.cookies.user_id]};
-  res.render('urls_index', templateVars);
+  const user = req.cookies.user_id
+  const templateVars = {urls: urlDatabase, user};
+  return res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => {
-  const templateVars = {user: users[req.cookies.user_id]};
-  res.render('urls_new', templateVars);
+  const user = req.cookies.user_id
+  const templateVars = {user};
+  if (!templateVars.user) {
+    return res.redirect('/login')
+  }
+  return res.render('urls_new', templateVars);
+});
+
+app.get('/urls/:shortURL', (req, res) => {
+  const user = req.cookies.user_id;
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  const templateVars = { shortURL: req.params.shortURL, longURL, user};
+  return res.render('urls_show', templateVars);
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  console.log(urlDatabase);
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  return res.redirect(longURL);
 });
 
 app.get('/urls.json', (req, res) => {
@@ -60,16 +77,6 @@ app.get('/urls.json', (req, res) => {
 
 app.get('/hello', (req, res) => {
   res.send('<html><bodyy>Hello <b>World</b></body></html>\n');
-});
-
-app.get('/urls/:shortURL', (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], user: users[req.cookies.user_id]};
-  res.render('urls_show', templateVars);
-});
-
-app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
 });
 
 app.post('/register', (req, res) => {
@@ -91,13 +98,15 @@ app.post('/register', (req, res) => {
   };
   users[id] = newUser;
   res.cookie('user_id', id);
-  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 app.post('/urls', (req, res) => {
-  const uuid = uuid();
-  urlDatabase[uuid] = req.body.longURL;
-  res.redirect(302, `/urls/${uuid}`);
+  const shortURL = uuid().split('-')[0];
+  const longURL = req.body.longURL;
+  const userID = req.cookies.user_id;
+  urlDatabase[shortURL] = { longURL, userID };
+  return res.redirect(302, `/urls/${shortURL}`);
 });
 
 app.post('/login', (req, res) => {
@@ -110,25 +119,27 @@ app.post('/login', (req, res) => {
   }
   
   res.cookie('user_id', user.id);
-  res.redirect('/urls/');
+  return res.redirect('/urls/');
 });
 
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
-  res.redirect('/urls/');
+  return res.redirect('/urls/');
 });
 
+//BUG
 app.post('/urls/:id' , (req, res) => {
   const shortURL = req.params.id;
+  const userID = req.cookies.user_id;
   const newURL = req.body.newURL;
-  urlDatabase[shortURL] = newURL;
-  res.redirect('/urls');
+  urlDatabase[shortURL] = { longURL: newURL, userID};
+  return res.redirect('/urls');
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
-  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 
