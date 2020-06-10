@@ -77,7 +77,7 @@ app.post('/register', (req, res) => {
     return res.sendStatus(400);
   }
 
-  if(validateEmail(email)) {
+  if(validateUser(email)) {
     return res.sendStatus(400);
   }
   
@@ -100,10 +100,13 @@ app.post('/urls', (req, res) => {
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  console.log(email);
-  if(!validateEmail(email)) {
-    return res.sendStatus(403)
+  const user = (validateUser(email, password));
+
+  if (!user) {
+    return res.sendStatus(403);
   };
+  
+  res.cookie('user_id', user.id);
   res.redirect('/urls/')
 });
 
@@ -130,12 +133,18 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`)
 });
 
-// Checks if email is already in the database
-// If email is in database return true
-const validateEmail = (email) => {
+// Checks if user is in the database with email
+// If user is in database check with optional password if matches supplied password
+// If password isnt supplied but email matches return email
+// If password is supplied and both email and password match return user object
+const validateUser = (email, password) => {
   for (const key in users) {
     if (email === users[key].email) {
-      return true;
+      if (!password) {
+        return users[key].email;
+      } else if (password === users[key].password) {
+        return users[key];
+      }
     }
   }
 };
