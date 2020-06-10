@@ -3,11 +3,7 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-
-const generateRandomString = () => {
-  const randomString = Math.random().toString(32).substring(2,8)
-  return randomString;
-};
+const { v4: uuid } = require('uuid');
 
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(cookieParser());
@@ -68,11 +64,19 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.post('/register', (req, res) => {
-
+  const id = uuid().split('-')[0];
+  const newUser = {
+    email: req.body.email,
+    password: req.body.password,
+    id: id
+  }
+  users[id] = newUser;
+  res.cookie('user_id', id);
+  res.redirect('/urls');
 });
 
 app.post('/urls', (req, res) => {
-  randomString = generateRandomString();
+  randomString = uuid();
   urlDatabase[randomString] = req.body.longURL;
   res.redirect(302, `/urls/${randomString}`);
 });
