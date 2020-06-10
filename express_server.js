@@ -45,6 +45,7 @@ app.get('/', (req, res) => {
 
 app.get('/urls', (req, res) => {
   const user = req.cookies.user_id
+  console.log(user);
   const templateVars = {urls: urlDatabase, user};
   return res.render('urls_index', templateVars);
 });
@@ -65,6 +66,7 @@ app.get('/urls/:shortURL', (req, res) => {
   return res.render('urls_show', templateVars);
 });
 
+//BUG
 app.get("/u/:shortURL", (req, res) => {
   console.log(urlDatabase);
   const longURL = urlDatabase[req.params.shortURL].longURL;
