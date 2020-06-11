@@ -2,15 +2,15 @@ const express = require('express');
 const app = express();
 const PORT = 8080;
 const bodyParser = require('body-parser');
-const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
 const { v4: uuid } = require('uuid');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const { getUserByEmail, urlsForUser, validUser } = require('./helper')
+
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieSession({ name: 'session', keys : ['dk233a6fnma1lm538wlz', 'kaskcn1k3jsal4n1l']}))
-app.use(cookieParser());
 app.set('view engine', 'ejs');
 
 const urlDatabase = {
@@ -30,16 +30,6 @@ const users = {
     password: "dishwasher-funk"
   }
 };
-
-//HELPER FUNCTIONS
-const getUserByEmail = (email, database) => {
-  for (const user in database) {
-    if (database[user].email === email) {
-      return database[user];
-    }
-  }
-  return false;
-}
 
 // GET ROUTES
 app.get('/login', (req, res) => {
@@ -63,7 +53,7 @@ app.get('/', (req, res) => {
 app.get('/urls', (req, res) => {
   const id = req.session.user_id;
   const user = users[id];
-  const validURL = urlsForUser(id);
+  const validURL = urlsForUser(id, urlDatabase);
   const templateVars = { urls: validURL, user };
   return res.render('urls_index', templateVars);
 });
@@ -154,18 +144,6 @@ app.post('/login', (req, res) => {
       }
     })
   }
-  // for (const user in users) {
-  //   if (users[user].email === email) {
-  //     bcrypt.compare(password, users[user].password, (err, result) => {  
-  //       if (result) {
-  //         req.session.user_id = users[user].id;
-  //         return res.redirect('/urls/');
-  //       } else {
-  //         return res.sendStatus(403);
-  //       }
-  //     })
-  //   }
-  // }
 });
 
 app.post('/logout', (req, res) => {
@@ -199,33 +177,3 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}!`);
 });
-
-// Checks if user is in the database with email
-// If user is in database check with optional password if matches supplied password
-// If password isnt supplied but email matches return email
-// If password is supplied and both email and password match return user object
-const validateLogin = (email, password) => {
-  for (const key in users) {
-    if (email === users[key].email) {
-      if (!password) {
-        return users[key].email;
-      } else if (password === users[key].password) {
-        return users[key];
-      }
-    }
-  }
-};
-
-const urlsForUser = (id) => {
-  const validURL = {};
-  for (const url in urlDatabase) {
-    if (urlDatabase[url].userID === id) {
-      validURL[url] = urlDatabase[url].longURL;
-    }
-  }
-  return validURL;
-};
-
-const validUser = (currentID, posterID) => {
-  return currentID === posterID;
-};
