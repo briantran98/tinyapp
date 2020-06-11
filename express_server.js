@@ -28,13 +28,13 @@ const users = {
 };
 
 app.get('/login', (req, res) => {
-  const user = req.cookies.user_id
+  const user = users[req.cookies.user_id]
   const templateVars = {user};
   return res.render('login', templateVars);
 });
 
 app.get('/register', (req, res) => {
-  const user = req.cookies.user_id
+  const user = users[req.cookies.user_id]
   const templateVars = {user};
   return res.render('register', templateVars);
 });
@@ -44,14 +44,14 @@ app.get('/', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const user = req.cookies.user_id
-  console.log(user);
+  const user = users[req.cookies.user_id]
+  const validURL =[];
   const templateVars = {urls: urlDatabase, user};
   return res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => {
-  const user = req.cookies.user_id
+  const user = users[req.cookies.user_id]
   const templateVars = {user};
   if (!templateVars.user) {
     return res.redirect('/login')
@@ -60,7 +60,7 @@ app.get('/urls/new', (req, res) => {
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  const user = req.cookies.user_id;
+  const user = users[req.cookies.user_id];
   const longURL = urlDatabase[req.params.shortURL].longURL;
   const templateVars = { shortURL: req.params.shortURL, longURL, user};
   return res.render('urls_show', templateVars);
