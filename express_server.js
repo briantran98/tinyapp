@@ -28,13 +28,15 @@ const users = {
 };
 
 app.get('/login', (req, res) => {
-  const user = users[req.cookies.user_id]
+  const id = req.cookies.user_id
+  const user = users[id]
   const templateVars = {user};
   return res.render('login', templateVars);
 });
 
 app.get('/register', (req, res) => {
-  const user = users[req.cookies.user_id]
+  const id = req.cookies.user_id
+  const user = users[id]
   const templateVars = {user};
   return res.render('register', templateVars);
 });
@@ -44,14 +46,16 @@ app.get('/', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const user = users[req.cookies.user_id]
-  const validURL =[];
-  const templateVars = {urls: urlDatabase, user};
+  const id = req.cookies.user_id
+  const user = users[id]
+  const validURL = urlsForUser(id);
+  const templateVars = {urls: validURL, user};
   return res.render('urls_index', templateVars);
 });
 
 app.get('/urls/new', (req, res) => {
-  const user = users[req.cookies.user_id]
+  const id = req.cookies.user_id
+  const user = users[id]
   const templateVars = {user};
   if (!templateVars.user) {
     return res.redirect('/login')
@@ -60,15 +64,16 @@ app.get('/urls/new', (req, res) => {
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  const user = users[req.cookies.user_id];
+  const id = req.cookies.user_id
+  const user = users[id];
   const longURL = urlDatabase[req.params.shortURL].longURL;
-  const templateVars = { shortURL: req.params.shortURL, longURL, user};
+  const validUser = id === urlDatabase[req.params.shortURL].userID? true : false;
+  const templateVars = { shortURL: req.params.shortURL, longURL, user, validUser};
   return res.render('urls_show', templateVars);
 });
 
-//BUG
+
 app.get("/u/:shortURL", (req, res) => {
-  console.log(urlDatabase);
   const longURL = urlDatabase[req.params.shortURL].longURL;
   return res.redirect(longURL);
 });
@@ -89,7 +94,7 @@ app.post('/register', (req, res) => {
     return res.sendStatus(400);
   }
 
-  if (validateUser(email)) {
+  if (validateLogin(email)) {
     return res.sendStatus(400);
   }
   
@@ -114,7 +119,7 @@ app.post('/urls', (req, res) => {
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const user = (validateUser(email, password));
+  const user = (validateLogin(email, password));
 
   if (!user) {
     return res.sendStatus(403);
@@ -129,18 +134,26 @@ app.post('/logout', (req, res) => {
   return res.redirect('/urls/');
 });
 
-//BUG
 app.post('/urls/:id' , (req, res) => {
+  const id = req.cookies.user_id;
+  const databaseID = urlDatabase[req.params.id].userID;
   const shortURL = req.params.id;
   const userID = req.cookies.user_id;
   const newURL = req.body.newURL;
-  urlDatabase[shortURL] = { longURL: newURL, userID};
+  if (validUser(id, databaseID)) {
+    urlDatabase[shortURL] = { longURL: newURL, userID};
+  }
   return res.redirect('/urls');
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
+  const id = req.cookies.user_id;
+  const databaseID = urlDatabase[req.params.shortURL].userID;
   const shortURL = req.params.shortURL;
-  delete urlDatabase[shortURL];
+  if (validUser(id, databaseID)) {
+    delete urlDatabase[shortURL];
+  }
+  console.log(urlDatabase)
   return res.redirect('/urls');
 });
 
@@ -153,7 +166,7 @@ app.listen(PORT, () => {
 // If user is in database check with optional password if matches supplied password
 // If password isnt supplied but email matches return email
 // If password is supplied and both email and password match return user object
-const validateUser = (email, password) => {
+const validateLogin = (email, password) => {
   for (const key in users) {
     if (email === users[key].email) {
       if (!password) {
@@ -164,3 +177,17 @@ const validateUser = (email, password) => {
     }
   }
 };
+
+const urlsForUser = (id) => {
+  const validURL = {};
+  for (const url in urlDatabase) {
+    if (urlDatabase[url].userID  === id) {
+      validURL[url] = urlDatabase[url].longURL;
+    }
+  }
+  return validURL;
+};
+
+const validUser = (currentID, posterID) => {
+  return currentID === posterID;
+}
