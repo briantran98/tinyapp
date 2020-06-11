@@ -6,7 +6,7 @@ const cookieSession = require('cookie-session');
 const { v4: uuid } = require('uuid');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
-const { getUserByEmail, urlsForUser, validUser } = require('./helper')
+const { getUserByEmail, urlsForUser, validUser } = require('./helpers')
 
 
 app.use(bodyParser.urlencoded({ extended: true }));
