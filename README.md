@@ -4,8 +4,13 @@ TinyApp is a full stack web application built with Node and Express that allows 
 
 ## Final Product
 
+Main screen after logging in
 !["screenshot description"](https://github.com/briantran98/tinyapp/blob/master/docs/tinyapp-mainscreen.png)
+
+Registration screen
 !["screenshot description"](https://github.com/briantran98/tinyapp/blob/master/docs/tinyapp-register.png)
+
+Screen to edit URLs
 !["screenshot description"](https://github.com/briantran98/tinyapp/blob/master/docs/tinyapp-url-edit.png)
 
 ## Dependencies
@@ -16,6 +21,7 @@ TinyApp is a full stack web application built with Node and Express that allows 
 - bcrypt
 - body-parser
 - cookie-session
+- uuid
 
 ## Getting Started
 
