@@ -8,39 +8,18 @@ const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const { getUserByEmail, urlsForUser, validUser } = require('./helpers')
 
-
+// MiddleWare
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieSession({ name: 'session', keys : ['dk233a6fnma1lm538wlz', 'kaskcn1k3jsal4n1l']}))
 app.set('view engine', 'ejs');
 
+// Databases
 const urlDatabase = {};
-
 const users = {};
 
-// GET ROUTES
-app.get('/login', (req, res) => {
-  const id = req.session.user_id;
-  const user = users[id];
-  const templateVars = { user };
-  if (id) {
-    return res.redirect('/urls')
-  }
-  return res.render('login', templateVars);
-});
-
-app.get('/register', (req, res) => {
-  const id = req.session.user_id;
-  const user = users[id];
-  const templateVars = { user };
-  if (id) {
-    return res.redirect('/urls')
-  }
-  return res.render('register', templateVars);
-});
-
 app.get('/', (req, res) => {
-  const id = req.session.user_id;
-  const user = users[id];
+  const userID = req.session.user_id;
+  const user = users[userID];
   const templateVars = { user };
   if (!templateVars.user) {
     return res.redirect('/login');
@@ -50,16 +29,31 @@ app.get('/', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const id = req.session.user_id;
-  const user = users[id];
-  const validURL = urlsForUser(id, urlDatabase);
+  const userID = req.session.user_id;
+  const user = users[userID];
+  const validURL = urlsForUser(userID, urlDatabase);
   const templateVars = { urls: validURL, user };
   return res.render('urls_index', templateVars);
 });
 
+app.post('/urls', (req, res) => {
+  const shortURL = uuid().split('-')[0].slice(0, 6);
+  const longURL = req.body.longURL;
+  const userID = req.session.user_id;
+  if (longURL) {
+    urlDatabase[shortURL] = { longURL, userID };
+  } else {
+    return res.send('No URL was entered');
+  }
+  if (userID) {
+    return res.redirect(302, `/urls/${shortURL}`);
+  }
+  return res.send('Please login to create a shortURL');
+});
+
 app.get('/urls/new', (req, res) => {
-  const id = req.session.user_id;
-  const user = users[id];
+  const userID = req.session.user_id;
+  const user = users[userID];
   const templateVars = { user };
   if (!templateVars.user) {
     return res.redirect('/login');
@@ -68,18 +62,46 @@ app.get('/urls/new', (req, res) => {
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  const id = req.session.user_id;
-  const user = users[id];
+  const userID = req.session.user_id;
+  const user = users[userID];
   const shortURL = req.params.shortURL
   const url = urlDatabase[shortURL];
   let longURL;
-  let validUser;
+  let authorized;
   if (url) {
     longURL = url.longURL;
-    validUser = id === url.userID ? true : false;
+    authorized = validUser(userID, url.userID);
   }
-  const templateVars = { shortURL, longURL, user, validUser };
+  const templateVars = { shortURL, longURL, user, authorized };
   return res.render('urls_show', templateVars);
+});
+
+app.post('/urls/:id', (req, res) => {
+  const userID = req.session.user_id;
+  const databaseID = urlDatabase[req.params.id].userID;
+  const shortURL = req.params.id;
+  const newURL = req.body.newURL;
+  if (validUser(userID, databaseID)) {
+    urlDatabase[shortURL] = { longURL: newURL, userID };
+  } else {
+    return res.send('You don\'t have authorization to do this action');
+  }
+  return res.redirect('/urls');
+});
+
+app.post('/urls/:id/delete', (req, res) => {
+  const userID = req.session.user_id;
+  const databaseID = urlDatabase[req.params.id].userID;
+  const shortURL = req.params.id;
+
+  if (!userID) {
+    return res.send('You don\'t have authorization to do this action');
+  } else if (validUser(userID, databaseID)) {
+    delete urlDatabase[shortURL];
+  } else {
+    return res.send('You don\'t have authorization to do this action');
+  }
+  return res.redirect('/urls');
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -91,17 +113,47 @@ app.get("/u/:shortURL", (req, res) => {
   }
 });
 
-app.get('/urls.json', (req, res) => {
-  res.json(urlDatabase);
+app.get('/login', (req, res) => {
+  const userID = req.session.user_id;
+  const user = users[userID];
+  const templateVars = { user };
+  if (userID) {
+    return res.redirect('/urls')
+  }
+  return res.render('login', templateVars);
 });
 
-app.get('/hello', (req, res) => {
-  res.send('<html><bodyy>Hello <b>World</b></body></html>\n');
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = getUserByEmail(email, users)
+
+  if (user) {
+    bcrypt.compare(password, user.password, (err, result) => {  
+      if (err) {
+        throw new Error('Error occured during login ', err);
+      }
+      if (result) {
+        req.session.user_id = user.userID;
+        return res.redirect('/urls/');
+      } else {
+        return res.sendStatus(403);
+      }
+    })
+  }
 });
 
-// POSTS ROUTES
+app.get('/register', (req, res) => {
+  const userID = req.session.user_id;
+  const user = users[userID];
+  const templateVars = { user };
+  if (userID) {
+    return res.redirect('/urls')
+  }
+  return res.render('register', templateVars);
+});
+
 app.post('/register', (req, res) => {
-  const id = uuid().split('-')[0].slice(0,6);
+  const userID = uuid().split('-')[0];
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -116,47 +168,18 @@ app.post('/register', (req, res) => {
     bcrypt.hash(req.body.password, saltRounds, (err, hashPassword) => {
       // Store hash in your password DB.
       if (err) {
-        throw Error('Error occured when registering ', err);
+        throw new Error('Error occured when registering ', err);
       }
   
       const newUser = {
         email,
+        userID,
         password: hashPassword,
-        id: id
       };
-      users[id] = newUser;
-      req.session.user_id = id;
+      users[userID] = newUser;
+      req.session.user_id = userID;
       return res.redirect('/urls');
     });
-  }
-});
-
-app.post('/urls', (req, res) => {
-  const shortURL = uuid().split('-')[0].slice(0, 6);
-  const longURL = req.body.longURL;
-  const userID = req.session.user_id;
-  if (longURL) {
-    urlDatabase[shortURL] = { longURL, userID };
-  }
-  if (userID) {
-    return res.redirect(302, `/urls/${shortURL}`);
-  }
-  return res.send('Please login to create a shortURL');
-});
-
-app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  const user = getUserByEmail(email, users)
-
-  if (user) {
-    bcrypt.compare(password, user.password, (err, result) => {  
-      if (result) {
-        req.session.user_id = user.id;
-        return res.redirect('/urls/');
-      } else {
-        return res.sendStatus(403);
-      }
-    })
   }
 });
 
@@ -165,40 +188,6 @@ app.post('/logout', (req, res) => {
   return res.redirect('/urls/');
 });
 
-app.post('/urls/:id', (req, res) => {
-  const databaseID = urlDatabase[req.params.id].userID;
-  const shortURL = req.params.id;
-  const userID = req.session.user_id;
-  const newURL = req.body.newURL;
-  if (!userID) {
-    return res.send('You don\'t have authorization to do this action');
-  } else if (validUser(userID, databaseID)) {
-    urlDatabase[shortURL] = { longURL: newURL, userID };
-  } else {
-    return res.send('You don\'t have authorization to do this action');
-  }
-  return res.redirect('/urls');
-});
-
-app.post('/urls/:id/delete', (req, res) => {
-  const userID = req.session.user_id;
-  const databaseID = urlDatabase[req.params.id].userID;
-  const id = req.params.id;
-
-  if (!userID) {
-    return res.send('You don\'t have authorization to do this action');
-  } else if (validUser(userID, databaseID)) {
-    delete urlDatabase[id];
-  } else {
-    return res.send('You don\'t have authorization to do this action');
-  }
-  return res.redirect('/urls');
-});
-
-
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}!`);
 });
-
-//_JtUWsV_WhJz1L80hnhJk_YeX5M
-//eyJ1c2VyX2lkIjoiMTc0ODNjIn0=
