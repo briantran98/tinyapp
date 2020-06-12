@@ -10,7 +10,7 @@
 
 <body>
   <%- include('partials/_header') %>
-  <% if (validUser) { %>
+  <% if (longURL  && validUser) { %>
   <div class="card text-center">
     <div class="card-header"></div>
     <div class="card-body">
@@ -28,6 +28,8 @@
       </form>
     </div>
   </div>
+  <% } else if (!longURL){ %>
+    <h1><b>This link doesn't exist: <%= shortURL%></b></h1>
   <% } else { %>
     <h1>You don't have the credentials to view this URL</h1>
   <% } %>

@@ -36,6 +36,9 @@ app.get('/login', (req, res) => {
   const id = req.session.user_id;
   const user = users[id];
   const templateVars = { user };
+  if (id) {
+    return res.redirect('/urls')
+  }
   return res.render('login', templateVars);
 });
 
@@ -43,11 +46,21 @@ app.get('/register', (req, res) => {
   const id = req.session.user_id;
   const user = users[id];
   const templateVars = { user };
+  if (id) {
+    return res.redirect('/urls')
+  }
   return res.render('register', templateVars);
 });
 
 app.get('/', (req, res) => {
-  res.send('Hello!');
+  const id = req.session.user_id;
+  const user = users[id];
+  const templateVars = { user };
+  if (!templateVars.user) {
+    return res.redirect('/login');
+  } else {
+    return res.redirect('/urls');
+  }
 });
 
 app.get('/urls', (req, res) => {
@@ -71,15 +84,27 @@ app.get('/urls/new', (req, res) => {
 app.get('/urls/:shortURL', (req, res) => {
   const id = req.session.user_id;
   const user = users[id];
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  const validUser = id === urlDatabase[req.params.shortURL].userID ? true : false;
-  const templateVars = { shortURL: req.params.shortURL, longURL, user, validUser };
+  const shortURL = req.params.shortURL
+  const url = urlDatabase[shortURL];
+  let longURL;
+  let validUser;
+  if (url) {
+    longURL = url.longURL;
+    validUser = id === url.userID ? true : false;
+  }
+  console.log(longURL);
+  const templateVars = { shortURL, longURL, user, validUser };
   return res.render('urls_show', templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  return res.redirect(longURL);
+  const url = urlDatabase[req.params.shortURL];
+  if (url) {
+    console.log("HERE");
+    return res.redirect(url.longURL);
+  } else {
+    return res.send('That shortURL doesn\'t exist')
+  }
 });
 
 app.get('/urls.json', (req, res) => {
@@ -126,8 +151,13 @@ app.post('/urls', (req, res) => {
   const shortURL = uuid().split('-')[0].slice(0, 6);
   const longURL = req.body.longURL;
   const userID = req.session.user_id;
-  urlDatabase[shortURL] = { longURL, userID };
-  return res.redirect(302, `/urls/${shortURL}`);
+  if (longURL) {
+    urlDatabase[shortURL] = { longURL, userID };
+  }
+  if (userID) {
+    return res.redirect(302, `/urls/${shortURL}`);
+  }
+  return res.send('Please login to create a shortURL');
 });
 
 app.post('/login', (req, res) => {
@@ -152,23 +182,31 @@ app.post('/logout', (req, res) => {
 });
 
 app.post('/urls/:id', (req, res) => {
-  const id = req.session.user_id;
   const databaseID = urlDatabase[req.params.id].userID;
   const shortURL = req.params.id;
   const userID = req.session.user_id;
   const newURL = req.body.newURL;
-  if (validUser(id, databaseID)) {
+  if (!userID) {
+    return res.send('You don\'t have authorization to do this action');
+  } else if (validUser(userID, databaseID)) {
     urlDatabase[shortURL] = { longURL: newURL, userID };
+  } else {
+    return res.send('You don\'t have authorization to do this action');
   }
   return res.redirect('/urls');
 });
 
-app.post('/urls/:shortURL/delete', (req, res) => {
-  const id = req.session.user_id;
-  const databaseID = urlDatabase[req.params.shortURL].userID;
-  const shortURL = req.params.shortURL;
-  if (validUser(id, databaseID)) {
-    delete urlDatabase[shortURL];
+app.post('/urls/:id/delete', (req, res) => {
+  const userID = req.session.user_id;
+  const databaseID = urlDatabase[req.params.id].userID;
+  const id = req.params.id;
+
+  if (!userID) {
+    return res.send('You don\'t have authorization to do this action');
+  } else if (validUser(userID, databaseID)) {
+    delete urlDatabase[id];
+  } else {
+    return res.send('You don\'t have authorization to do this action');
   }
   return res.redirect('/urls');
 });
@@ -177,3 +215,6 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}!`);
 });
+
+//_JtUWsV_WhJz1L80hnhJk_YeX5M
+//eyJ1c2VyX2lkIjoiMTc0ODNjIn0=
