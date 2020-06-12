@@ -92,7 +92,6 @@ app.get('/urls/:shortURL', (req, res) => {
     longURL = url.longURL;
     validUser = id === url.userID ? true : false;
   }
-  console.log(longURL);
   const templateVars = { shortURL, longURL, user, validUser };
   return res.render('urls_show', templateVars);
 });
@@ -100,7 +99,6 @@ app.get('/urls/:shortURL', (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   const url = urlDatabase[req.params.shortURL];
   if (url) {
-    console.log("HERE");
     return res.redirect(url.longURL);
   } else {
     return res.send('That shortURL doesn\'t exist')
